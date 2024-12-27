@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movable Triangular Icons</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+<canvas id="simulation"></canvas>
+<script>
+    const canvas = document.getElementById("simulation");
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    class Obstacle {
+        constructor(path, speed, color) {
+            this.path = path; // Array of points defining the path
+            this.speed = speed; // Movement speed along the path
+            this.color = color; // Color of the triangle
+            this.size = 30; // Size of the triangle (3x3 cm in pixels)
+            this.currentIndex = 0; // Current index on the path
+            this.x = path[0].x;
+            this.y = path[0].y;
+        }
+
+        draw() {
+            ctx.fillStyle = this.color;
+            ctx.beginPath();
+            ctx.moveTo(this.x, this.y);
+            ctx.lineTo(this.x + this.size / 2, this.y + this.size);
+            ctx.lineTo(this.x - this.size / 2, this.y + this.size);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        update() {
+            if (this.currentIndex < this.path.length - 1) {
+                const target = this.path[this.currentIndex + 1];
+                const dx = target.x - this.x;
+                const dy = target.y - this.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < this.speed) {
+                    this.currentIndex++;
+                } else {
+                    this.x += (dx / distance) * this.speed;
+                    this.y += (dy / distance) * this.speed;
+                }
+            }
+        }
+    }
+
+    function createRandomPath() {
+        const path = [];
+        const segments = Math.floor(Math.random() * 10) + 5;
+        let x = Math.random() * canvas.width;
+        let y = Math.random() * canvas.height;
+        path.push({ x, y });
+
+        for (let i = 0; i < segments; i++) {
+            x += (Math.random() - 0.5) * canvas.width / 4;
+            y += (Math.random() - 0.5) * canvas.height / 4;
+            x = Math.max(0, Math.min(canvas.width, x));
+            y = Math.max(0, Math.min(canvas.height, y));
+            path.push({ x, y });
+        }
+
+        return path;
+    }
+
+    const obstacles = [];
+    for (let i = 0; i < 10; i++) {
+        const path = createRandomPath();
+        const speed = Math.random() * 2 + 1;
+        const color = `hsl(${Math.random() * 360}, 100%, 50%)`;
+        obstacles.push(new Obstacle(path, speed, color));
+    }
+
+    function checkEdges() {
+        for (const obstacle of obstacles) {
+            if (obstacle.x + obstacle.size / 2 >= canvas.width) {
+                document.body.style.backgroundColor = "red";
+                return;
+            }
+        }
+        document.body.style.backgroundColor = "black";
+    }
+
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Draw paths (roads)
+        ctx.lineWidth = 5;
+        ctx.strokeStyle = "gray";
+        for (const obstacle of obstacles) {
+            ctx.beginPath();
+            ctx.moveTo(obstacle.path[0].x, obstacle.path[0].y);
+            for (const point of obstacle.path) {
+                ctx.lineTo(point.x, point.y);
+            }
+            ctx.stroke();
+        }
+
+        // Update and draw obstacles
+        for (const obstacle of obstacles) {
+            obstacle.update();
+            obstacle.draw();
+        }
+
+        checkEdges();
+        requestAnimationFrame(animate);
+    }
+
+    animate();
+</script>
+</body>
+</html>
